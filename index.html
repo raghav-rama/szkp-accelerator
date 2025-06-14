@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Report: The SZKP ZKP Accelerator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+        }
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+        .nav-link {
+            transition: color 0.3s ease;
+        }
+        .nav-link:hover {
+            color: #f59e0b;
+        }
+        .active-nav {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+        .card-flip {
+            perspective: 1000px;
+        }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .card-flip:hover .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            border-radius: 0.75rem;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="text-slate-700">
+
+    <header class="bg-slate-800/80 backdrop-blur-sm sticky top-0 z-50 shadow-md">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-white">SZKP Deep Dive</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div id="nav-links" class="ml-10 flex items-baseline space-x-4">
+                        <a href="#intro" class="nav-link text-slate-300 px-3 py-2 rounded-md text-sm font-medium">Introduction</a>
+                        <a href="#bottlenecks" class="nav-link text-slate-300 px-3 py-2 rounded-md text-sm font-medium">Bottlenecks</a>
+                        <a href="#szkp-arch" class="nav-link text-slate-300 px-3 py-2 rounded-md text-sm font-medium">Architecture</a>
+                        <a href="#performance" class="nav-link text-slate-300 px-3 py-2 rounded-md text-sm font-medium">Performance</a>
+                        <a href="#landscape" class="nav-link text-slate-300 px-3 py-2 rounded-md text-sm font-medium">Landscape</a>
+                        <a href="#ecosystem" class="nav-link text-slate-300 px-3 py-2 rounded-md text-sm font-medium">Ecosystem</a>
+                        <a href="#conclusion" class="nav-link text-slate-300 px-3 py-2 rounded-md text-sm font-medium">Conclusion</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Section: Introduction -->
+        <section id="intro" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <p class="text-base font-semibold text-amber-600 tracking-wide uppercase">The ZKP Revolution</p>
+                <h2 class="mt-2 text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">The Challenge of Verifiable Computation</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-xl text-slate-500">Zero-Knowledge Proofs (ZKPs) allow verification of a computation's correctness without revealing the secret data behind it. This has massive implications for privacy and security in blockchains, cloud computing, and AI. However, there's a major roadblock: generating these proofs is incredibly slow.</p>
+                
+                <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div class="bg-slate-100 p-8 rounded-xl shadow-lg text-center">
+                        <p class="text-lg font-medium text-slate-600">Proof Generation Time (Large Workload)</p>
+                        <p class="mt-2 text-5xl font-bold text-slate-900" id="cpu-time">24,666 ms</p>
+                        <p class="mt-1 font-semibold text-slate-500">High-End CPU</p>
+                    </div>
+                    <div class="bg-amber-100 p-8 rounded-xl shadow-lg text-center border-2 border-amber-400">
+                        <p class="text-lg font-medium text-amber-800">Proof Generation Time (Large Workload)</p>
+                        <p class="mt-2 text-5xl font-bold text-amber-900" id="szkp-time">53 ms</p>
+                        <p class="mt-1 font-semibold text-amber-700">SZKP Accelerator</p>
+                    </div>
+                </div>
+                <div class="mt-8">
+                     <p class="text-6xl font-extrabold text-amber-500" id="speedup-factor">465x</p>
+                     <p class="mt-2 text-xl font-medium text-slate-600">Faster with Specialized Hardware</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="bottlenecks" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <p class="text-base font-semibold text-amber-600 tracking-wide uppercase">Identifying the Problem</p>
+                    <h2 class="mt-2 text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">Where is the Time Spent?</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-xl text-slate-500">The computational cost of ZKP generation isn't uniform. The vast majority of time is spent on two core cryptographic operations: Multi-Scalar Multiplication (MSM) and Number Theoretic Transform (NTT). Any meaningful acceleration must target these specific bottlenecks.</p>
+                </div>
+
+                <div class="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div class="chart-container h-80 md:h-96 mx-auto">
+                        <canvas id="bottleneckChart"></canvas>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="p-6 bg-white rounded-lg shadow-md">
+                            <h3 class="text-xl font-bold text-slate-800">Multi-Scalar Multiplication (MSM)</h3>
+                            <p class="mt-2 text-slate-600">This involves calculating a weighted sum of points on an elliptic curve. It's a fundamental but extremely costly task in pairing-based cryptography, forming the backbone of proof construction.</p>
+                        </div>
+                        <div class="p-6 bg-white rounded-lg shadow-md">
+                            <h3 class="text-xl font-bold text-slate-800">Number Theoretic Transform (NTT)</h3>
+                            <p class="mt-2 text-slate-600">Analogous to a Fast Fourier Transform (FFT) but over finite fields, NTTs are essential for the large-scale polynomial arithmetic that underpins modern ZKP schemes like Groth16.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="szkp-arch" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <p class="text-base font-semibold text-amber-600 tracking-wide uppercase">The Solution</p>
+                    <h2 class="mt-2 text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">The SZKP Architecture: A Deep Dive</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-xl text-slate-500">SZKP is a scalable ASIC framework designed to accelerate the *entire* Groth16 proof generation on-chip. It introduces several key innovations to overcome the limitations of prior hardware and achieve massive performance gains.</p>
+                </div>
+
+                <div class="mt-12 space-y-16">
+                    <div>
+                        <h3 class="text-2xl font-bold text-center text-slate-800 mb-8">Key Innovation 1: Complete On-Chip Acceleration</h3>
+                        <div class="p-6 bg-slate-50 rounded-lg shadow-inner">
+                            <p class="text-center mb-6 text-slate-600">Unlike previous attempts that offloaded parts of the computation to a slow CPU, creating a new bottleneck, SZKP integrates everything. This diagram shows the high-level dataflow it accelerates on a single chip.</p>
+                            <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4 text-center">
+                                <div class="p-4 bg-white rounded-lg shadow w-48">R1CS Conversion</div>
+                                <div class="text-2xl font-bold text-slate-400">&rarr;</div>
+                                <div class="p-4 bg-white rounded-lg shadow w-48">NTT/Polynomial Ops</div>
+                                <div class="text-2xl font-bold text-slate-400">&rarr;</div>
+                                <div class="p-4 bg-amber-200 rounded-lg shadow w-48 border-2 border-amber-400">Dense & Sparse MSMs</div>
+                                <div class="text-2xl font-bold text-slate-400">&rarr;</div>
+                                <div class="p-4 bg-white rounded-lg shadow w-48">Final Proof</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-2xl font-bold text-center text-slate-800 mb-8">Key Innovation 2: Scalable MSM with Banked Memory</h3>
+                         <p class="text-center max-w-2xl mx-auto mb-6 text-slate-600">To avoid memory bottlenecks when using many parallel Processing Elements (PEs), SZKP partitions memory into banks. Each PE accesses a different bank in a rotating fashion, ensuring no contention. The animation below illustrates this concept.</p>
+                        <div class="w-full max-w-2xl mx-auto bg-slate-50 p-8 rounded-lg shadow-inner">
+                           <div id="msm-animation" class="relative h-64 grid grid-cols-4 gap-4">
+                           </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-2xl font-bold text-center text-slate-800 mb-8">Key Innovation 3: Efficient PE Design & Scheduling</h3>
+                        <p class="text-center max-w-2xl mx-auto mb-6 text-slate-600">Within each MSM Processing Element, SZKP uses two tricks to achieve ~98% hardware utilization. It queues cheap memory *addresses* instead of bulky point data, and it always processes the **Longest Queue (LQ)** first, ensuring the core arithmetic unit never starves for work.</p>
+                        <div class="flex justify-center items-start space-x-8">
+                            <div class="text-center p-6 bg-white rounded-lg shadow-md w-1/2">
+                                <h4 class="font-bold text-lg">Point Address Queueing</h4>
+                                <p class="text-sm text-slate-500 mt-2">Reduces on-chip memory needs by over 50x, allowing for much deeper queues to buffer work.</p>
+                            </div>
+                            <div class="text-center p-6 bg-white rounded-lg shadow-md w-1/2">
+                                <h4 class="font-bold text-lg">Longest Queue Dispatch</h4>
+                                 <p class="text-sm text-slate-500 mt-2">A simple but highly effective policy that keeps the expensive point adder constantly busy.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="performance" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <p class="text-base font-semibold text-amber-600 tracking-wide uppercase">The Results</p>
+                    <h2 class="mt-2 text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">Performance Showdown</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-xl text-slate-500">The architectural choices in SZKP result in dramatic, order-of-magnitude speedups compared to all existing platforms. The chart below compares the total runtime for a large proof generation workload, normalized to an equivalent technology node where applicable for fair comparison.</p>
+                </div>
+
+                <div class="mt-12 chart-container mx-auto">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+                <div class="text-center mt-4">
+                    <p class="text-sm text-slate-500">Hover over bars for details. Runtimes are for the 'Auction' workload ($2^{20}$ problem size).</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="landscape" class="py-16 sm:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <p class="text-base font-semibold text-amber-600 tracking-wide uppercase">The Bigger Picture</p>
+                    <h2 class="mt-2 text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">A Bifurcating Hardware Landscape</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-xl text-slate-500">The world of ZKPs is not standing still. As new proof systems emerge, the hardware to accelerate them is diverging. There is no "one-size-fits-all" ZKP accelerator. The market is splitting into two main families of hardware, each co-designed with a specific class of cryptographic protocols.</p>
+                </div>
+                
+                <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="p-8 bg-slate-50 rounded-lg shadow-inner">
+                        <h3 class="text-2xl font-bold text-slate-800">Wave 1: Pairing-Based SNARK Accelerators</h3>
+                        <p class="mt-4 text-slate-600">These are essentially **Elliptic Curve Arithmetic Machines**. Their architecture is dominated by hardware for large-field (e.g., 254-bit) modular arithmetic, specifically Multi-Scalar Multiplication (MSM) and Number Theoretic Transforms (NTT).</p>
+                        <div class="mt-6">
+                            <p class="font-semibold">Target Protocols:</p>
+                            <p class="text-slate-500">Groth16, G16</p>
+                            <p class="font-semibold mt-2">Key Primitives:</p>
+                            <p class="text-slate-500">MSM, NTT, Pairings</p>
+                             <p class="font-semibold mt-2">Example Systems:</p>
+                            <p class="text-slate-500 font-bold">SZKP, PipeZK</p>
+                        </div>
+                    </div>
+                     <div class="p-8 bg-amber-50 rounded-lg shadow-inner border-2 border-amber-200">
+                        <h3 class="text-2xl font-bold text-slate-800">Wave 2: Hash-Based & Universal Accelerators</h3>
+                        <p class="mt-4 text-slate-600">These are **Finite Field and Hashing Machines**. They are optimized for different primitives, such as cryptographic hashing (Poseidon) and arithmetic over smaller (e.g., 64-bit) fields, which are common in newer protocols like STARKs.</p>
+                         <div class="mt-6">
+                            <p class="font-semibold">Target Protocols:</p>
+                            <p class="text-slate-500">STARKs, PlonK variants, HyperPlonk</p>
+                            <p class="font-semibold mt-2">Key Primitives:</p>
+                            <p class="text-slate-500">Hashing, SumCheck, small-field arithmetic</p>
+                             <p class="font-semibold mt-2">Example Systems:</p>
+                            <p class="text-slate-500 font-bold">NoCap, zkSpeed, UniZK</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="ecosystem" class="py-16 sm:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <p class="text-base font-semibold text-amber-600 tracking-wide uppercase">From Lab to Market</p>
+                    <h2 class="mt-2 text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">The Commercial ZKP Ecosystem</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-xl text-slate-500">The demand for ZKP acceleration has fueled a vibrant startup ecosystem. Companies are making strategic bets on different hardware platforms (flexible FPGAs vs. hyper-efficient ASICs) and business models, forming a new "proving supply chain."</p>
+                </div>
+                
+                <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                </div>
+            </div>
+        </section>
+
+        <section id="conclusion" class="py-16 sm:py-24 bg-slate-800 text-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-3xl font-extrabold tracking-tight sm:text-4xl">The Future is Verifiable</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-xl text-slate-300">SZKP provides a blueprint for complete, scalable acceleration of dominant ZKP protocols. This work, combined with the broader industry trend toward hardware-algorithm co-design, is rapidly reducing the cost of proof generation. This progress is transforming ZKPs from a niche cryptographic tool into a ubiquitous, affordable infrastructure for a more secure and private digital world.</p>
+                 <div class="mt-10">
+                    <a href="#intro" class="text-base font-medium rounded-md text-slate-800 bg-amber-400 hover:bg-amber-500 px-6 py-3">Back to Top</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const bottleneckData = {
+                labels: ['Multi-Scalar Multiplication (MSM)', 'Number Theoretic Transform (NTT)', 'Other'],
+                datasets: [{
+                    label: 'Proof Generation Time',
+                    data: [65, 25, 10],
+                    backgroundColor: [
+                        '#fbbf24', 
+                        '#f59e0b', 
+                        '#d1d5db'  
+                    ],
+                    borderColor: '#f8fafc',
+                    borderWidth: 4
+                }]
+            };
+
+            const performanceData = {
+                labels: ['High-End CPU', 'PipeZK (Prior ASIC)', 'GZKP (GPU)', 'SZKP (This Work)'],
+                datasets: [{
+                    label: 'Total Runtime (ms)',
+                    data: [24666, 2053, 520, 53.07],
+                    backgroundColor: [
+                        '#94a3b8', 
+                        '#64748b', 
+                        '#475569', 
+                        '#f59e0b'  
+                    ],
+                    barPercentage: 0.6,
+                    categoryPercentage: 0.7,
+                }]
+            };
+
+            const performanceDetails = [
+                { tech: '7nm', area: '~296mm² (chiplet)' },
+                { tech: '28nm', area: '~50mm²' },
+                { tech: '12nm', area: '815mm²' },
+                { tech: '7nm (scaled)', area: '~33mm²' }
+            ];
+
+            const ecosystemPlayers = [
+                { name: 'Irreducible', tech: 'FPGA', model: 'Proving-as-a-Service', color: 'bg-sky-100', textColor: 'text-sky-800' },
+                { name: 'Ponos Technology', tech: 'FPGA', model: 'R&D / HW-SW Co-design', color: 'bg-sky-100', textColor: 'text-sky-800' },
+                { name: 'Cysic', tech: 'ASIC', model: 'Hardware Sales / PaaS', color: 'bg-emerald-100', textColor: 'text-emerald-800' },
+                { name: 'Accseal', tech: 'ASIC', model: 'Hardware Sales / PaaS', color: 'bg-emerald-100', textColor: 'text-emerald-800' },
+                { name: 'Ingonyama', tech: 'GPU Software / ASIC', model: 'Software Licensing / PaaS', color: 'bg-indigo-100', textColor: 'text-indigo-800' },
+                { name: 'Polyhedra', tech: 'Proprietary ZKPs', model: 'Application Provider', color: 'bg-purple-100', textColor: 'text-purple-800' },
+            ];
+            
+
+            function animateValue(obj, start, end, duration) {
+                let startTimestamp = null;
+                const step = (timestamp) => {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    const value = Math.floor(progress * (end - start) + start);
+                    obj.innerHTML = value.toLocaleString();
+                    if (progress < 1) {
+                        window.requestAnimationFrame(step);
+                    } else {
+                        obj.innerHTML = end.toLocaleString();
+                    }
+                };
+                window.requestAnimationFrame(step);
+            }
+
+            const cpuTimeEl = document.getElementById('cpu-time');
+            const szkpTimeEl = document.getElementById('szkp-time');
+            const speedupFactorEl = document.getElementById('speedup-factor');
+            
+            const introObserver = new IntersectionObserver((entries) => {
+                if(entries[0].isIntersecting) {
+                    animateValue(cpuTimeEl, 0, 24666, 2000);
+                    animateValue(szkpTimeEl, 0, 53, 2000);
+                    animateValue(speedupFactorEl, 0, 465, 2000);
+                    introObserver.disconnect();
+                }
+            }, { threshold: 0.5 });
+            introObserver.observe(document.getElementById('intro'));
+
+            const msmAnimationContainer = document.getElementById('msm-animation');
+            const numPEs = 4;
+            let msmRound = 0;
+            
+            function createMsmElements() {
+                msmAnimationContainer.innerHTML = '';
+                 for (let i = 0; i < numPEs; i++) {
+                    const pe = document.createElement('div');
+                    pe.id = `pe-${i}`;
+                    pe.className = 'absolute bg-slate-700 text-white rounded-lg flex items-center justify-center font-bold text-sm shadow-lg';
+                    pe.style.width = '60px';
+                    pe.style.height = '40px';
+                    pe.style.top = '20px';
+                    pe.style.left = `${(i * 25) + 12.5}%`;
+                    pe.style.transform = 'translateX(-50%)';
+                    pe.innerText = `PE ${i}`;
+                    msmAnimationContainer.appendChild(pe);
+
+                    const bank = document.createElement('div');
+                    bank.id = `bank-${i}`;
+                    bank.className = 'absolute bg-amber-400 text-amber-900 rounded-lg flex items-center justify-center font-bold text-sm shadow-lg';
+                    bank.style.width = '60px';
+                    bank.style.height = '40px';
+                    bank.style.bottom = '20px';
+                    bank.style.left = `${(i * 25) + 12.5}%`;
+                    bank.style.transform = 'translateX(-50%)';
+                    bank.innerText = `Bank ${i}`;
+                    msmAnimationContainer.appendChild(bank);
+                 }
+                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                 svg.setAttribute('class', 'absolute top-0 left-0 w-full h-full');
+                 svg.id = 'msm-lines';
+                 msmAnimationContainer.appendChild(svg);
+            }
+
+            function updateMsmAnimation() {
+                const svg = document.getElementById('msm-lines');
+                if (!svg) return;
+                svg.innerHTML = '';
+                msmRound++;
+                for (let i = 0; i < numPEs; i++) {
+                    const peEl = document.getElementById(`pe-${i}`);
+                    const targetBankIndex = (i + msmRound) % numPEs;
+                    const bankEl = document.getElementById(`bank-${targetBankIndex}`);
+
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    const containerRect = msmAnimationContainer.getBoundingClientRect();
+                    const peRect = peEl.getBoundingClientRect();
+                    const bankRect = bankEl.getBoundingClientRect();
+                    
+                    line.setAttribute('x1', peRect.left - containerRect.left + peRect.width / 2);
+                    line.setAttribute('y1', peRect.top - containerRect.top + peRect.height);
+                    line.setAttribute('x2', bankRect.left - containerRect.left + bankRect.width / 2);
+                    line.setAttribute('y2', bankRect.top - containerRect.top);
+                    line.setAttribute('stroke', '#475569'); // slate-600
+                    line.setAttribute('stroke-width', '2');
+                    line.setAttribute('stroke-dasharray', '4');
+                    svg.appendChild(line);
+                }
+            }
+            createMsmElements();
+            setInterval(updateMsmAnimation, 2000);
+
+
+            const bottleneckCtx = document.getElementById('bottleneckChart')?.getContext('2d');
+            if(bottleneckCtx) {
+                new Chart(bottleneckCtx, {
+                    type: 'doughnut',
+                    data: bottleneckData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    font: { size: 14 }
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'ZKP Proof Generation Time Breakdown',
+                                font: { size: 18, weight: 'bold' },
+                                color: '#1e293b' 
+                            }
+                        }
+                    }
+                });
+            }
+
+            const performanceCtx = document.getElementById('performanceChart')?.getContext('2d');
+            if(performanceCtx) {
+                new Chart(performanceCtx, {
+                    type: 'bar',
+                    data: performanceData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                type: 'logarithmic',
+                                beginAtZero: false,
+                                title: {
+                                    display: true,
+                                    text: 'Runtime (ms, log scale)',
+                                    font: { size: 14 }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    font: { size: 12 }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            title: {
+                                display: true,
+                                text: 'Comparative Runtimes (Lower is Better)',
+                                font: { size: 18, weight: 'bold' },
+                                color: '#1e293b'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    afterLabel: function(context) {
+                                        const details = performanceDetails[context.dataIndex];
+                                        return `Tech: ${details.tech}\nArea: ${details.area}`;
+                                    }
+                                },
+                                bodyFont: { size: 12 },
+                                titleFont: { size: 14 },
+                                displayColors: false,
+                                padding: 10
+                            }
+                        }
+                    }
+                });
+            }
+
+            const ecosystemContainer = document.querySelector('#ecosystem .grid');
+            if(ecosystemContainer) {
+                ecosystemPlayers.forEach(player => {
+                    const card = document.createElement('div');
+                    card.className = 'card-flip h-48';
+                    card.innerHTML = `
+                        <div class="card-inner rounded-lg shadow-lg">
+                            <div class="card-front bg-white">
+                                <h3 class="text-xl font-bold ${player.textColor}">${player.name}</h3>
+                                <div class="mt-2 px-3 py-1 text-sm font-semibold rounded-full ${player.color}">${player.tech}</div>
+                            </div>
+                            <div class="card-back ${player.color}">
+                                <h4 class="font-bold ${player.textColor}">Business Model</h4>
+                                <p class="text-center ${player.textColor}">${player.model}</p>
+                            </div>
+                        </div>
+                    `;
+                    ecosystemContainer.appendChild(card);
+                });
+            }
+
+
+            const navLinks = document.querySelectorAll('#nav-links a');
+            const sections = document.querySelectorAll('main section');
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.4
+            };
+
+            const sectionObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        navLinks.forEach(link => {
+                            link.classList.remove('active-nav');
+                            if (link.getAttribute('href') === `#${id}`) {
+                                link.classList.add('active-nav');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                sectionObserver.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>
